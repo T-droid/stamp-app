@@ -5,5 +5,15 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "aiofiles>=24.1.0",
+    "bcrypt>=4.3.0",
     "fastapi[standard]>=0.115.12",
+    "mongoengine>=0.29.1",
+    "opencv-python>=4.11.0.86",
+    "pillow>=11.2.1",
+    "pyjwt>=2.10.1",
+    "pymupdf>=1.25.5",
+    "python-dotenv>=1.1.0",
+    "python-multipart>=0.0.20",
+    "tesserocr>=2.8.0",
 ]
