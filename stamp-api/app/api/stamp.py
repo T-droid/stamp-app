@@ -1,46 +1,22 @@
-from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, Form, BackgroundTasks, Depends
 from fastapi.responses import FileResponse
-from fastapi.middleware.cors import CORSMiddleware
 import shutil
 from  services.image_processor import extract_stamp
 from services.pdf_stamper import stamp_pdf
 from helpers.remove_file import remove_file
-from helpers.db import init_db
-import sys
-import api.auth as auth
+from dependencies.authorisation import authorise_user
 
-app = FastAPI()
-app.include_router(auth.router)
-try:
-    init_db()
-except Exception as e:
-    print(f"Database connection failed: {e}")
-    sys.exit(1)
+router = APIRouter(prefix='/stamps')
 
-
-origins = [
-    "http://localhost:5173",
-    "http://172.0.0.1:5173/"
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.post("/extract_stamp/")
-async def extract_stamp_endpoint(file: UploadFile = File(...)):
+@router.post("/extract_stamp/")
+async def extract_stamp_endpoint(file: UploadFile = File(...), user=Depends(authorise_user)):
     with open(f"app/static/{file.filename}", "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
     stamp_path = extract_stamp(f"app/static/{file.filename}")
     return FileResponse(stamp_path, filename="extracted_stamp.png", media_type="image/png")
 
-@app.post("/stamp-pdf/")
+@router.post("/stamp-pdf/")
 async def stamp_pdf_endpoint(
     pdf_file: UploadFile = File(...),
     stamp_file: UploadFile = File(...),
@@ -69,10 +45,3 @@ async def stamp_pdf_endpoint(
     background_tasks.add_task(remove_file, output_pdf)
 
     return FileResponse(output_pdf, filename="stamped_output.pdf", media_type="application/pdf")
-
-def main():
-    import uvicorn
-    uvicorn.run(app, port=8000)
-
-if __name__ == "__main__":
-    main()

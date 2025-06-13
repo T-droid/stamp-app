@@ -2,8 +2,9 @@ from fastapi import APIRouter, Header, HTTPException, status, Depends, Form
 from pydantic import BaseModel
 from models.User import User
 from helpers.password_manager import encrypt_password, verify_password
-from helpers.jwt import generate_token, authorise_user
+from helpers.jwt import generate_token
 from typing import Annotated
+from dependencies.authorisation import authorise_user
 
 class UserItem(BaseModel):
     username: str
@@ -16,17 +17,6 @@ class UserItem(BaseModel):
 class LoginBody(BaseModel):
     email: str
     password: str
-
-
-def get_current_user(authorisation: str = Header(...)):
-    if not authorisation.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authorisation header"
-        )
-    token = authorisation.split(" ")[1]
-    payload = authorise_user(token)
-    return payload
 
 router = APIRouter(prefix='/auth')
 
@@ -85,5 +75,5 @@ async def login(body: Annotated[LoginBody, Form(...)]):
     }
 
 @router.get('/me')
-async def get_me(current_user=Depends(get_current_user)):
+async def get_me(current_user=Depends(authorise_user)):
     return {"user": current_user}
